@@ -1,9 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-RESOURCE_GROUP="<RG_NAME>"
-SUBSCRIPTION="<SUBSCRIPTION_NAME>"
-REGION="<REGION_NAME>"
+RESOURCE_GROUP="<RG-NAME>"
+SUBSCRIPTION="<SUB-ID>"
+REGION="<REGION>"
 
 MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 TEMPLATES_PATH="${MYDIR}/templates"
@@ -114,7 +114,9 @@ if [ ${RUN_BICEP} == true ]; then
     export USER_OBJECTID=$(az ad signed-in-user show --query id --output tsv)
 
     # Purge existing roleDefinitionIds variable from bicepparam file
-    sed -i '/param roleDefinitionIds = {/,/}/d' bicep/params.bicepparam
+    cp bicep/params.bicepparam bicep/params.bicepparam.bak
+    sed '/param roleDefinitionIds = {/,/}/d' bicep/params.bicepparam.bak > bicep/params.bicepparam
+    rm -f bicep/params.bicepparam.bak
 
     # Get list of role definition IDs and add them to bicepparam file
     az role definition list --query "[].{roleName:roleName, id:id}" --output json > role_definitions.json
@@ -166,7 +168,7 @@ if [ ${RUN_ANSIBLE} == true ]; then
     sleep 5
 
     # Kill tunnel processes on exit
-    TUNNEL_PIDS=$(ps aux | grep bastion | awk '{print $2}' | head -n -1)
+    TUNNEL_PIDS=$(ps aux | grep bastion | awk '{print $2}' | sed '$d')
     trap 'kill $(echo $TUNNEL_PIDS)' EXIT
 
     # Run Ansible playbooks
@@ -193,7 +195,7 @@ if [ ${RUN_ANSIBLE} == true ]; then
     LOGIN_VM_IDS=()
 
     for LOGIN_VM_IDX in $(seq 1 ${NUMBER_OF_LOGIN_VMS}); do
-        for i in {1..10}; do
+        for i in {1..20}; do
             LOGIN_VM_ID=$(az resource list -g ${RESOURCE_GROUP} --resource-type 'Microsoft.Compute/virtualMachines' --query "[?tags.Name == 'login${LOGIN_VM_IDX}'].id" -o tsv)
 
             # If login VM is not yet created, wait and try again
@@ -215,4 +217,6 @@ if [ ${RUN_ANSIBLE} == true ]; then
         echo "Could not retreive all login VMs resource ID"
         exit 1
     fi
+
+    echo "Install completed successfully"
 fi
