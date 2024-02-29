@@ -1,9 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-RESOURCE_GROUP="<RG-NAME>"
-SUBSCRIPTION="<SUB-ID>"
-REGION="<REGION>"
+RESOURCE_GROUP="RG-AI-Infra-01-test"
+SUBSCRIPTION="0988137f-9fcd-4e36-b99f-e5b3f35b28db"
+REGION="francecentral"
 
 MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 TEMPLATES_PATH="${MYDIR}/templates"
@@ -153,6 +153,8 @@ create_bastion_scripts 'cycleserver' ${DEPLOYMENT_OUTPUT} ${CC_VM_ID}
 if [ ${RUN_ANSIBLE} == true ]; then
     # Install Ansible in conda environment
     [ -d ./miniconda ] || ./ansible/install/install_ansible.sh
+
+    source ${MYDIR}/miniconda/bin/activate
 
     # Create inventory file with the appropriate variable to execute through jump host
     ANSIBLE_INVENTORY=${MYDIR}/ansible/inventory.json
